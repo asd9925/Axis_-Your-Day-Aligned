@@ -1,0 +1,1 @@
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'build' CHECK (kind IN ('build','break'));

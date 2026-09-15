@@ -21,6 +21,32 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const user = session?.user;
+      if (!user) return;
+
+      const userDisplayName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "you";
+
+      const { error } = await supabase.from("profiles").upsert(
+        { id: user.id, display_name: userDisplayName },
+        { onConflict: "id" },
+      );
+
+      if (error) {
+        console.error("Failed to sync Google profile display name", error);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/today" });
     });

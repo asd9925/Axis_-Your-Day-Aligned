@@ -13,6 +13,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const publicAppUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +35,8 @@ function AuthPage() {
           email, password,
           options: {
             data: { display_name: name || email.split("@")[0] },
-            emailRedirectTo: window.location.origin,
+            // emailRedirectTo: window.location.origin,
+            emailRedirectTo: publicAppUrl,
           },
         });
         if (error) throw error;
@@ -59,7 +61,8 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin,
+          // redirectTo: window.location.origin,
+          redirectTo: publicAppUrl,
         },
       });
 

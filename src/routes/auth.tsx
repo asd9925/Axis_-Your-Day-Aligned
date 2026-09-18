@@ -21,9 +21,10 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user;
-      if (!user) return;
+      // Only act on a sign-in event with a valid user
+      if (!user || event !== "SIGNED_IN") return;
 
       const userDisplayName =
         user.user_metadata?.full_name ||
@@ -39,12 +40,19 @@ function AuthPage() {
       if (error) {
         console.error("Failed to sync Google profile display name", error);
       }
+
+      // Navigate to the authenticated landing immediately after sign-in
+      try {
+        navigate({ to: "/today" });
+      } catch (e) {
+        // non-fatal
+      }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

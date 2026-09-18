@@ -212,31 +212,41 @@ function GoogleCalendarSection() {
   const connect = async () => {
     setBusy(true);
     try {
-      const result = await connectAppUser({
-        connectorId: "google_calendar",
-        gatewayBaseUrl: "https://connector-gateway.lovable.dev",
-        start: (targetOrigin) => startFn({ data: targetOrigin }),
-      });
-      if (!result.success) {
-        toast.error(result.error ?? "Couldn't connect Google Calendar");
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const redirectUri = import.meta.env.VITE_GOOGLE_OAUTH_REDIRECT;
+      if (!clientId || !redirectUri) {
+        toast.error('Missing Google OAuth client config');
         return;
       }
-      if (!result.connectionAPIKey) {
-        toast.error("No offline access — reconnect and grant permission.");
+
+      const scope = encodeURIComponent('openid email profile https://www.googleapis.com/auth/calendar');
+      const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&response_type=code&scope=${scope}&redirect_uri=${encodeURIComponent(
+        redirectUri,
+      )}&access_type=offline&prompt=consent`;
+
+      const win = window.open(url, 'gc', 'width=600,height=700');
+      if (!win) {
+        toast.error('Popup blocked');
         return;
       }
-      await saveFn({ data: { connectionAPIKey: result.connectionAPIKey } });
-      toast.success("Google Calendar connected.");
-      // Initial pull.
-      try {
-        const r = await syncFn();
-        toast.success(`Pulled ${r.imported} events from Google.`);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Initial sync failed");
-      }
-      await refetch();
-      qc.invalidateQueries({ queryKey: ["events"] });
-      qc.invalidateQueries({ queryKey: ["google-status"] });
+
+      const onMessage = async (e: MessageEvent) => {
+        if (e.origin !== window.location.origin) return;
+        if (e.data?.type !== 'google-calendar-connected') return;
+        window.removeEventListener('message', onMessage);
+        if (e.data.ok) {
+          toast.success('Google Calendar connected.');
+          try {
+            await refetch();
+          } catch {}
+          qc.invalidateQueries({ queryKey: ['events'] });
+          qc.invalidateQueries({ queryKey: ['google-status'] });
+        } else {
+          toast.error('Google Calendar connect failed');
+        }
+      };
+
+      window.addEventListener('message', onMessage);
     } finally {
       setBusy(false);
     }

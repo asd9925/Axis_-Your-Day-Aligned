@@ -93,6 +93,18 @@ function RootComponent() {
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
 
+  useEffect(() => {
+    // On initial mount, if a session already exists (user returned from OAuth),
+    // navigate to the authenticated landing so users don't have to click "Get started".
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        try {
+          router.navigate({ to: "/today" });
+        } catch {}
+      }
+    });
+  }, [router]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ProfileColorSync />

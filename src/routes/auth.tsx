@@ -69,8 +69,8 @@ function AuthPage() {
           email, password,
           options: {
             data: { display_name: name || email.split("@")[0] },
-            // emailRedirectTo: window.location.origin,
-            emailRedirectTo: publicAppUrl,
+              // ensure the user returns to the auth page so the client can pick up the session
+              emailRedirectTo: `${publicAppUrl.replace(/\/$/, "")}/auth`,
           },
         });
         if (error) throw error;
@@ -95,8 +95,8 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          // redirectTo: window.location.origin,
-          redirectTo: publicAppUrl,
+          // redirect back to the auth page so the mounted listener navigates to /today
+          redirectTo: `${publicAppUrl.replace(/\/$/, "")}/auth`,
         },
       });
 
